@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hello World Vercel",
-  description: "Next.js + Supabase with Google auth and profiles",
+  title: "Welcome",
+  description: "Sign in and manage your profile",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

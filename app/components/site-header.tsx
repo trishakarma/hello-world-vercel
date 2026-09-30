@@ -30,12 +30,9 @@ export async function SiteHeader() {
     <header className="border-b border-neutral-200 bg-white">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="text-sm font-semibold tracking-tight">
-          Hello World
+          Home
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
-          <Link href="/items" className="text-neutral-600 hover:text-neutral-900">
-            Items
-          </Link>
           {isLoggedIn ? (
             <>
               <Link
