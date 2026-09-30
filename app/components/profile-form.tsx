@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useActionState, useRef, useState } from "react";
 
 import {
@@ -18,8 +19,16 @@ type Props = {
 };
 
 export function ProfileForm({ profile, userEmail }: Props) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
-    updateProfileNames,
+    async (prev: ProfileActionState, formData: FormData) => {
+      const result = await updateProfileNames(prev, formData);
+      if (result.success) {
+        router.push("/members");
+        router.refresh();
+      }
+      return result;
+    },
     initialState,
   );
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url);
@@ -100,7 +109,7 @@ export function ProfileForm({ profile, userEmail }: Props) {
         <div>
           <p className="text-sm font-medium text-neutral-900">Profile photo</p>
           <p className="mt-1 text-sm text-neutral-600">
-            Stored in Supabase Storage — only the URL is saved on your profile.
+            Choose a photo for your profile.
           </p>
           <input
             ref={fileInputRef}
@@ -163,7 +172,7 @@ export function ProfileForm({ profile, userEmail }: Props) {
 
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || uploading || Boolean(uploadError)}
           className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save changes"}

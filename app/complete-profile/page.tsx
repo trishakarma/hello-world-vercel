@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { CompleteProfileForm } from "@/app/components/complete-profile-form";
+import { ProfileForm } from "@/app/components/profile-form";
 import { profileNeedsNames } from "@/lib/profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -16,12 +16,16 @@ export default async function CompleteProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("first_name, last_name")
+    .select("*")
     .eq("id", user.id)
     .maybeSingle();
 
+  if (!profile) {
+    throw new Error("Your profile could not be loaded. Check that the profiles SQL has been run.");
+  }
+
   if (!profileNeedsNames(profile)) {
-    redirect("/");
+    redirect("/members");
   }
 
   return (
@@ -33,7 +37,7 @@ export default async function CompleteProfilePage() {
         Complete your profile
       </h1>
       <div className="mt-8">
-        <CompleteProfileForm />
+        <ProfileForm profile={profile} userEmail={user.email ?? null} />
       </div>
     </main>
   );
