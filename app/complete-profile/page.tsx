@@ -14,14 +14,33 @@ export default async function CompleteProfilePage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  let { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (!profile) {
-    throw new Error("Your profile could not be loaded. Check that the profiles SQL has been run.");
+  if (!error && !profile) {
+    const result = await supabase
+      .from("profiles")
+      .insert({ id: user.id })
+      .select("*")
+      .single();
+    profile = result.data;
+    error = result.error;
+  }
+
+  if (error || !profile) {
+    console.error("Profile initialization failed", error?.code, error?.message);
+    return (
+      <main className="mx-auto max-w-lg px-6 py-16">
+        <h1 className="text-3xl font-semibold tracking-tight">Profile unavailable</h1>
+        <p className="mt-4 text-neutral-600">
+          You are signed in, but we could not load your profile. Please try again
+          after the profile database setup has been checked.
+        </p>
+      </main>
+    );
   }
 
   if (!profileNeedsNames(profile)) {

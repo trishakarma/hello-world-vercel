@@ -33,6 +33,11 @@ create trigger on_auth_user_created
   for each row
   execute function public.handle_new_user();
 
+-- Create profiles for accounts that existed before this trigger was installed.
+insert into public.profiles (id)
+select id from auth.users
+on conflict (id) do nothing;
+
 -- Storage for profile photos (URLs only in profiles.avatar_url — no binary in the table)
 insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
