@@ -91,12 +91,14 @@ export function ProfileForm({ profile, userEmail }: Props) {
   return (
     <div className="space-y-8">
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <div className="relative h-24 w-24 overflow-hidden rounded-full bg-neutral-100">
+        <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-neutral-100">
           {avatarUrl ? (
             <Image
               src={avatarUrl}
               alt="Profile"
-              fill
+              width={96}
+              height={96}
+              style={{ width: 96, height: 96, objectFit: "cover", borderRadius: "50%" }}
               className="object-cover"
               unoptimized
             />
