@@ -1,34 +1,77 @@
-import Link from "next/link";
-
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { CourtRoom } from "@/app/components/court-room";
+import type { Evidence } from "@/lib/supabase/types";
 
 export default async function Home() {
-  let isLoggedIn = false;
-
+  let loggedIn = false;
+  let evidence: Evidence[] = [];
+  let setupError = false;
   try {
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    isLoggedIn = Boolean(user);
+    loggedIn = Boolean(user);
+    const [
+      { data: cases, error },
+      { data: scores, error: scoreError },
+      { data: captions, error: captionError },
+      { data: votes },
+    ] = await Promise.all([
+      supabase
+        .from("court_cases")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(40),
+      supabase.rpc("court_scores"),
+      supabase.from("captions").select("*"),
+      user
+        ? supabase
+            .from("caption_votes")
+            .select("caption_id,value")
+            .eq("user_id", user.id)
+        : Promise.resolve({ data: [] }),
+    ]);
+    setupError = Boolean(error || scoreError || captionError);
+    evidence = await Promise.all(
+      (cases || []).map(async (c) => {
+        const { data } = await supabase.storage
+          .from("court-evidence")
+          .createSignedUrl(c.image_path, 3600);
+        return {
+          ...c,
+          imageUrl: data?.signedUrl || "",
+          captions: (captions || [])
+            .filter((cap) => cap.case_id === c.id)
+            .map((cap) => ({
+              ...cap,
+              score: Number(
+                scores?.find((s) => s.caption_id === cap.id)?.score || 0,
+              ),
+              votes: Number(
+                scores?.find((s) => s.caption_id === cap.id)?.votes || 0,
+              ),
+              myVote: votes?.find((v) => v.caption_id === cap.id)?.value || 0,
+            })),
+        };
+      }),
+    );
   } catch {
-    // Supabase env not configured locally.
+    setupError = true;
   }
-
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+  }).format(new Date());
+  const today = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+    weekday,
+  );
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-6 py-16">
-      <h1 className="text-4xl font-semibold tracking-tight">
-        {isLoggedIn ? "Hello, you're signed in!" : "Welcome"}
-      </h1>
-      <p className="mt-4 text-lg text-neutral-600">
-        {isLoggedIn ? "Congratulations!" : "Sign in with Google to get started."}
-      </p>
-      <Link
-        href={isLoggedIn ? "/profile" : "/login"}
-        className="mt-8 inline-flex w-fit items-center rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-800"
-      >
-        {isLoggedIn ? "Your profile" : "Sign in with Google"}
-      </Link>
-    </main>
+    <CourtRoom
+      evidence={evidence}
+      loggedIn={loggedIn}
+      setupError={setupError}
+      today={today}
+    />
   );
 }

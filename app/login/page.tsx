@@ -14,7 +14,8 @@ export default async function LoginPage({ searchParams }: Props) {
     <main className="mx-auto max-w-md px-6 py-16">
       <h1 className="text-3xl font-semibold tracking-tight">Sign in</h1>
       <p className="mt-3 text-neutral-600">
-        Use Google to access your profile and members-only content.
+        Join the jury with Google. Submit photo evidence and decide which AI
+        captions deserve a laugh.
       </p>
       {params.error ? (
         <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">

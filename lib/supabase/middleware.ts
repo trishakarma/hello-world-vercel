@@ -43,7 +43,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && pathname !== "/complete-profile" && !pathname.startsWith("/auth")) {
+  if (
+    user &&
+    !pathname.startsWith("/api/") &&
+    pathname !== "/complete-profile" &&
+    !pathname.startsWith("/auth")
+  ) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("first_name, last_name")
@@ -51,9 +56,7 @@ export async function updateSession(request: NextRequest) {
       .maybeSingle();
 
     const needsProfile =
-      !profile ||
-      !profile.first_name?.trim() ||
-      !profile.last_name?.trim();
+      !profile || !profile.first_name?.trim() || !profile.last_name?.trim();
 
     if (needsProfile) {
       const redirectUrl = request.nextUrl.clone();

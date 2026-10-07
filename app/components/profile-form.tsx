@@ -24,7 +24,7 @@ export function ProfileForm({ profile, userEmail }: Props) {
     async (prev: ProfileActionState, formData: FormData) => {
       const result = await updateProfileNames(prev, formData);
       if (result.success) {
-        router.push("/members");
+        router.push("/");
         router.refresh();
       }
       return result;
@@ -98,7 +98,12 @@ export function ProfileForm({ profile, userEmail }: Props) {
               alt="Profile"
               width={96}
               height={96}
-              style={{ width: 96, height: 96, objectFit: "cover", borderRadius: "50%" }}
+              style={{
+                width: 96,
+                height: 96,
+                objectFit: "cover",
+                borderRadius: "50%",
+              }}
               className="object-cover"
               unoptimized
             />

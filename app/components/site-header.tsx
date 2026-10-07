@@ -27,10 +27,10 @@ export async function SiteHeader() {
   }
 
   return (
-    <header className="border-b border-neutral-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-4">
+    <header className="court-header">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="text-sm font-semibold tracking-tight">
-          Home
+          CAPTION COURT <span className="brand-mark">§</span>
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
           {isLoggedIn ? (
