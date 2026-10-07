@@ -36,12 +36,6 @@ export async function SiteHeader() {
           {isLoggedIn ? (
             <>
               <Link
-                href="/members"
-                className="text-neutral-600 hover:text-neutral-900"
-              >
-                Members
-              </Link>
-              <Link
                 href="/profile"
                 className="text-neutral-600 hover:text-neutral-900"
               >

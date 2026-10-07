@@ -635,9 +635,6 @@ h1 em {
     gap: 10px;
     font-size: 12px;
   }
-  .court-header nav > a[href="/members"] {
-    display: none;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *,
