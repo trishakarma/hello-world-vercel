@@ -1,9 +1,12 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CourtRoom } from "@/app/components/court-room";
+import { loadDailyCourt } from "@/lib/daily-court-server";
 import type { Evidence } from "@/lib/supabase/types";
 
 export default async function Home() {
+  const dailyCourt = await loadDailyCourt();
   let loggedIn = false;
+  let deadlines: Record<string, string> = {};
   let evidence: Evidence[] = [];
   let setupError = false;
   try {
@@ -33,8 +36,31 @@ export default async function Home() {
         : Promise.resolve({ data: [] }),
     ]);
     setupError = Boolean(error || scoreError || captionError);
+    const featuredIds = [
+      dailyCourt.session?.case_id,
+      dailyCourt.previous?.case_id,
+    ].filter((id): id is string => Boolean(id));
+    const missingIds = featuredIds.filter(
+      (id) => !cases?.some((c) => c.id === id),
+    );
+    const { data: extraCases } = missingIds.length
+      ? await supabase.from("court_cases").select("*").in("id", missingIds)
+      : { data: [] };
+    const allCases = [...(cases || []), ...(extraCases || [])];
+    if (dailyCourt.available && allCases.length) {
+      const { data: sessions } = await supabase
+        .from("daily_court_sessions")
+        .select("case_id,closes_at")
+        .in(
+          "case_id",
+          allCases.map((c) => c.id),
+        );
+      deadlines = Object.fromEntries(
+        (sessions || []).map((s) => [s.case_id, s.closes_at]),
+      );
+    }
     evidence = await Promise.all(
-      (cases || []).map(async (c) => {
+      allCases.map(async (c) => {
         const { data } = await supabase.storage
           .from("court-evidence")
           .createSignedUrl(c.image_path, 3600);
@@ -72,6 +98,8 @@ export default async function Home() {
       loggedIn={loggedIn}
       setupError={setupError}
       today={today}
+      dailyCourt={dailyCourt}
+      deadlines={deadlines}
     />
   );
 }

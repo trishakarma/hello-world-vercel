@@ -9,6 +9,22 @@ export type Profile = {
 export type Database = {
   public: {
     Tables: {
+      daily_court_sessions: {
+        Row: {
+          session_date: string;
+          case_id: string;
+          opens_at: string;
+          closes_at: string;
+        };
+        Insert: {
+          session_date: string;
+          case_id: string;
+          opens_at: string;
+          closes_at: string;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       court_cases: {
         Row: CourtCase;
         Insert: Partial<CourtCase> &
@@ -57,6 +73,15 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      ensure_daily_court: {
+        Args: Record<string, never>;
+        Returns: {
+          session_date: string;
+          case_id: string;
+          opens_at: string;
+          closes_at: string;
+        }[];
+      };
       court_scores: {
         Args: Record<string, never>;
         Returns: { caption_id: string; score: number; votes: number }[];

@@ -26,6 +26,12 @@ Photo evidence. AI captions. A jury of your peers.
 
 The server key is used only by the image-generation route. Ordinary browsing and voting use the signed-in user's cookie-aware Supabase client. Generations cannot be inserted/changed through the anonymous or authenticated database API. The storage bucket is private, and signed photo URLs are issued only for published cases. Uploaded images are deliberately shared publicly after generation, as the upload screen explains.
 
+## Daily Court
+
+Run `supabase/daily-court.sql` after the main migration. A shared daily case opens at midnight and closes at 8 p.m. in America/New_York, including daylight-saving changes. The first visit during open hours selects the oldest published case that has never been featured. If no unfeatured cases exist, the courtroom waits for fresh uploads; the ordinary docket remains open. No background scheduler is needed.
+
+The daily case stays closed permanently after its deadline. A database trigger rejects late inserts and updates, including direct Supabase requests. Winners use the highest net score; ties share the verdict and a session with zero votes has no winner. The UI refreshes automatically at closing and midnight. The current ruling and previous ruling give users a reason to return.
+
 ## Verify before submission
 
 - Open `/` signed out: browse cases, but voting and uploads require sign-in.
@@ -36,6 +42,7 @@ The server key is used only by the image-generation route. Ordinary browsing and
 - Try an oversized/unsupported file and invalid/missing AI key: show helpful errors without publishing a partial case.
 - Check narrow/mobile layout and keyboard navigation.
 - `npm run lint` and `npm run build -- --webpack`.
+- `node --test tests/daily-court.test.mjs` checks timing and result handling. To run the isolated Postgres deadline test too, install `@electric-sql/pglite` in a temporary directory and set `COURT_PGLITE_MODULE` to its `dist/index.js` path.
 - With the local server running, `node --test tests/court-access.test.mjs` checks anonymous API protection and request-origin protection.
 
 ## Vercel

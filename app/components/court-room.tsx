@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { DailyCourtPanel } from "@/app/components/daily-court-panel";
+import type { DailyCourt } from "@/lib/daily-court";
 import type { Evidence } from "@/lib/supabase/types";
 
 const themes = ["Campus chaos", "NYC side quest", "Anything goes"];
@@ -22,11 +24,15 @@ export function CourtRoom({
   loggedIn,
   setupError,
   today,
+  dailyCourt,
+  deadlines,
 }: {
   evidence: Evidence[];
   loggedIn: boolean;
   setupError: boolean;
   today: number;
+  dailyCourt: DailyCourt;
+  deadlines: Record<string, string>;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState("Docket");
@@ -43,6 +49,39 @@ export function CourtRoom({
   const [myVotes, setMyVotes] = useState<Record<string, number>>({});
   const [scoreChanges, setScoreChanges] = useState<Record<string, number>>({});
   const dialog = useRef<HTMLDialogElement>(null);
+  const [clock, setClock] = useState(() => Date.parse(dailyCourt.serverNow));
+  useEffect(() => {
+    const origin = performance.now();
+    const interval = setInterval(
+      () =>
+        setClock(Date.parse(dailyCourt.serverNow) + performance.now() - origin),
+      1000,
+    );
+    return () => clearInterval(interval);
+  }, [dailyCourt.serverNow]);
+  useEffect(() => {
+    const boundary =
+      dailyCourt.session &&
+      Date.parse(dailyCourt.session.closes_at) >
+        Date.parse(dailyCourt.serverNow)
+        ? dailyCourt.session.closes_at
+        : dailyCourt.nextOpensAt;
+    const timeout = setTimeout(
+      () => {
+        setMyVotes({});
+        setScoreChanges({});
+        router.refresh();
+      },
+      Math.max(0, Date.parse(boundary) - Date.parse(dailyCourt.serverNow)) +
+        1500,
+    );
+    return () => clearTimeout(timeout);
+  }, [
+    dailyCourt.session,
+    dailyCourt.serverNow,
+    dailyCourt.nextOpensAt,
+    router,
+  ]);
   useEffect(
     () => () => {
       if (preview) URL.revokeObjectURL(preview);
@@ -120,7 +159,14 @@ export function CourtRoom({
         ...v,
         [captionId]: (v[captionId] || 0) + value - previous,
       }));
-      setNotice("Verdict recorded. You can change your mind anytime.");
+      const isDaily = evidence
+        .find((item) => item.id === dailyCourt.session?.case_id)
+        ?.captions.some((c) => c.id === captionId);
+      setNotice(
+        isDaily
+          ? "Verdict recorded. Return after 8 p.m. New York time for the ruling."
+          : "Verdict recorded. You can change your mind anytime.",
+      );
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not record verdict.",
@@ -167,7 +213,7 @@ export function CourtRoom({
                 Sign in to submit evidence ↗
               </Link>
             )}
-            <a href="#docket" className="text-link">
+            <a href="#daily-court" className="text-link">
               Take the jury seat ↓
             </a>
           </div>
@@ -282,6 +328,23 @@ export function CourtRoom({
           </div>
         </div>
       </section>
+      {!open && error && (
+        <p role="alert" className="court-error">
+          {error}
+        </p>
+      )}
+      <p role="status" className={notice ? "court-notice" : "sr-only"}>
+        {notice}
+      </p>
+      <DailyCourtPanel
+        dailyCourt={dailyCourt}
+        evidence={evidence}
+        clock={clock}
+        loggedIn={loggedIn}
+        myVotes={myVotes}
+        voting={voting}
+        onVote={vote}
+      />
       <section className="daily-brief">
         <span className="brief-icon">✳</span>
         <div>
@@ -314,14 +377,6 @@ export function CourtRoom({
             {evidence.length} CASE{evidence.length === 1 ? "" : "S"} ON FILE
           </span>
         </div>
-        <p role="status" className={notice ? "court-notice" : "sr-only"}>
-          {notice}
-        </p>
-        {!open && error && (
-          <p role="alert" className="court-error">
-            {error}
-          </p>
-        )}
         {setupError && (
           <p className="setup-note">
             The court’s records are not connected yet. Your clerk needs to run
@@ -371,7 +426,14 @@ export function CourtRoom({
                   ) : (
                     <p>Evidence photo unavailable. Refresh to retry.</p>
                   )}
-                  <span className="photo-label">READY FOR JUDGMENT</span>
+                  <span className="photo-label">
+                    {deadlines[item.id] &&
+                    clock >= Date.parse(deadlines[item.id])
+                      ? "DAILY COURT · CASE CLOSED"
+                      : item.id === dailyCourt.session?.case_id
+                        ? "TODAY’S DAILY COURT"
+                        : "READY FOR JUDGMENT"}
+                  </span>
                 </div>
                 <div className="case-caption-list">
                   {item.captions.map((caption, i) => {
@@ -383,7 +445,12 @@ export function CourtRoom({
                           <p>{caption.content}</p>
                         </div>
                         <div className="verdict-row">
-                          {loggedIn ? (
+                          {deadlines[item.id] &&
+                          clock >= Date.parse(deadlines[item.id]) ? (
+                            <span className="closed-verdict">
+                              Voting closed · The jury has spoken
+                            </span>
+                          ) : loggedIn ? (
                             <>
                               <button
                                 disabled={voting !== null}
@@ -531,7 +598,9 @@ export function CourtRoom({
             />
           </label>
           <div className="context-field">
-            <label htmlFor="image-context">What’s the story? <span>(optional)</span></label>
+            <label htmlFor="image-context">
+              What’s the story? <span>(optional)</span>
+            </label>
             <textarea
               id="image-context"
               name="context"
@@ -544,7 +613,10 @@ export function CourtRoom({
               aria-describedby="context-help context-count"
             />
             <div className="context-help-row">
-              <p id="context-help">Add details the photo can’t explain. Context is saved with the public AI prompt.</p>
+              <p id="context-help">
+                Add details the photo can’t explain. Context is saved with the
+                public AI prompt.
+              </p>
               <span id="context-count">{context.length}/1000</span>
             </div>
           </div>

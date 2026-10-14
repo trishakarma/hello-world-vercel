@@ -26,6 +26,14 @@ export async function POST(request: Request) {
         { user_id: user.id, caption_id: captionId, value },
         { onConflict: "user_id,caption_id" },
       );
+    if (error?.message.includes("COURT_CLOSED"))
+      return Response.json(
+        {
+          error:
+            "The jury has spoken. This daily case is closed. Return for the next session!",
+        },
+        { status: 409 },
+      );
     if (error)
       return Response.json(
         { error: "Could not save your vote. Please try again." },
