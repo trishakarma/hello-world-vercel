@@ -57,7 +57,10 @@ grant select, insert, update on public.caption_votes to authenticated;
 grant all on public.court_cases, public.captions, public.caption_votes to service_role;
 revoke all on public.profiles from anon;
 revoke insert, delete, truncate, references, trigger on public.profiles from authenticated;
-grant select, update on public.profiles to authenticated;
+-- Preserve column restrictions when the separate admin app adds is_superadmin.
+revoke update on public.profiles from public, anon, authenticated;
+grant select on public.profiles to authenticated;
+grant update(first_name,last_name,avatar_url,updated_at) on public.profiles to authenticated;
 drop policy if exists "Ready cases are readable" on public.court_cases;
 create policy "Ready cases are readable" on public.court_cases for select to anon, authenticated using (status = 'ready');
 drop policy if exists "Ready captions are readable" on public.captions;
