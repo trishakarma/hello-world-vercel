@@ -9,6 +9,67 @@ export type Profile = {
 export type Database = {
   public: {
     Tables: {
+      generation_requests: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          case_id: string | null;
+          chain_id: string | null;
+          model_key: string;
+          theme: string;
+          user_context: string;
+          source: string;
+          status: string;
+          error_message: string | null;
+          duration_ms: number | null;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          case_id?: string | null;
+          chain_id?: string | null;
+          model_key: string;
+          theme: string;
+          user_context: string;
+          source: string;
+          status?: string;
+        };
+        Update: {
+          status?: string;
+          case_id?: string | null;
+          error_message?: string | null;
+          duration_ms?: number;
+        };
+        Relationships: [];
+      };
+      llm_responses: {
+        Row: {
+          id: string;
+          request_id: string;
+          step_id: string | null;
+          step_name: string;
+          model_key: string;
+          prompt: string;
+          response_text: string | null;
+          status: string;
+          duration_ms: number | null;
+          error_message: string | null;
+          created_at: string;
+        };
+        Insert: {
+          request_id: string;
+          step_id?: string | null;
+          step_name: string;
+          model_key: string;
+          prompt: string;
+          response_text: string | null;
+          status: string;
+          duration_ms: number;
+          error_message?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       daily_court_sessions: {
         Row: {
           session_date: string;
@@ -73,6 +134,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      generation_configuration: {
+        Args: Record<string, never>;
+        Returns: import("@/lib/generation").GenerationConfig;
+      };
       ensure_daily_court: {
         Args: Record<string, never>;
         Returns: {
