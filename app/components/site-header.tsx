@@ -3,6 +3,8 @@ import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { displayName, getProfileForUser } from "@/lib/profile";
 
+import { ThemeToggle } from "./theme-toggle";
+
 import { SignOutButton } from "./sign-out-button";
 
 export async function SiteHeader() {
@@ -33,6 +35,7 @@ export async function SiteHeader() {
           CAPTION COURT <span className="brand-mark">§</span>
         </Link>
         <nav className="flex flex-wrap items-center gap-4 text-sm font-medium">
+          <ThemeToggle />
           {isLoggedIn ? (
             <>
               <Link
